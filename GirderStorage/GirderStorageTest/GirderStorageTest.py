@@ -50,8 +50,6 @@ class GirderStorageTestWidget(ScriptedLoadableModuleWidget):
   def setup(self):
     ScriptedLoadableModuleWidget.setup(self)
 
-    # Instantiate and connect widgets ...
-
     #
     # Parameters Area
     #
@@ -59,57 +57,7 @@ class GirderStorageTestWidget(ScriptedLoadableModuleWidget):
     parametersCollapsibleButton.text = "Parameters"
     self.layout.addWidget(parametersCollapsibleButton)
 
-    # Layout within the dummy collapsible button
     parametersFormLayout = qt.QFormLayout(parametersCollapsibleButton)
-
-    #
-    # input volume selector
-    #
-    self.inputSelector = slicer.qMRMLNodeComboBox()
-    self.inputSelector.nodeTypes = ["vtkMRMLScalarVolumeNode"]
-    self.inputSelector.selectNodeUponCreation = True
-    self.inputSelector.addEnabled = False
-    self.inputSelector.removeEnabled = False
-    self.inputSelector.noneEnabled = False
-    self.inputSelector.showHidden = False
-    self.inputSelector.showChildNodeTypes = False
-    self.inputSelector.setMRMLScene( slicer.mrmlScene )
-    self.inputSelector.setToolTip( "Pick the input to the algorithm." )
-    # parametersFormLayout.addRow("Input Volume: ", self.inputSelector)
-
-    #
-    # output volume selector
-    #
-    self.outputSelector = slicer.qMRMLNodeComboBox()
-    self.outputSelector.nodeTypes = ["vtkMRMLScalarVolumeNode"]
-    self.outputSelector.selectNodeUponCreation = True
-    self.outputSelector.addEnabled = True
-    self.outputSelector.removeEnabled = True
-    self.outputSelector.noneEnabled = True
-    self.outputSelector.showHidden = False
-    self.outputSelector.showChildNodeTypes = False
-    self.outputSelector.setMRMLScene( slicer.mrmlScene )
-    self.outputSelector.setToolTip( "Pick the output to the algorithm." )
-    # parametersFormLayout.addRow("Output Volume: ", self.outputSelector)
-
-    #
-    # threshold value
-    #
-    self.imageThresholdSliderWidget = ctk.ctkSliderWidget()
-    self.imageThresholdSliderWidget.singleStep = 0.1
-    self.imageThresholdSliderWidget.minimum = -100
-    self.imageThresholdSliderWidget.maximum = 100
-    self.imageThresholdSliderWidget.value = 0.5
-    self.imageThresholdSliderWidget.setToolTip("Set threshold value for computing the output image. Voxels that have intensities lower than this value will set to zero.")
-    # parametersFormLayout.addRow("Image threshold", self.imageThresholdSliderWidget)
-
-    #
-    # check box to trigger taking screen shots for later use in tutorials
-    #
-    self.enableScreenshotsFlagCheckBox = qt.QCheckBox()
-    self.enableScreenshotsFlagCheckBox.checked = 0
-    self.enableScreenshotsFlagCheckBox.setToolTip("If checked, take screen shots for tutorials. Use Save Data to write them to disk.")
-    # parametersFormLayout.addRow("Enable Screenshots", self.enableScreenshotsFlagCheckBox)
 
     self.userEdit = qt.QLineEdit()
     parametersFormLayout.addRow("Girder user: ", self.userEdit)
@@ -120,46 +68,40 @@ class GirderStorageTestWidget(ScriptedLoadableModuleWidget):
     self.apiUrl = qt.QLineEdit()
     parametersFormLayout.addRow("API URL: ", self.apiUrl)
 
-    #
-    # Apply Button
-    #
-    self.applyButton = qt.QPushButton("Apply")
-    self.applyButton.toolTip = "Run the algorithm."
-    self.applyButton.enabled = False
-    # parametersFormLayout.addRow(self.applyButton)
-
     self.saveButton = qt.QPushButton("Save and upload to Girder")
     parametersFormLayout.addRow(self.saveButton)
 
-    # connections
-    self.applyButton.connect('clicked(bool)', self.onApplyButton)
-    self.inputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
-    self.outputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
-
     self.saveButton.connect('clicked(bool)', self.onSaveButton)
-
 
     # Add vertical spacer
     self.layout.addStretch(1)
 
-    # Refresh Apply button state
-    self.onSelect()
+    settings = slicer.app.userSettings()
+    username = settings.value(self.moduleName + '/' + self.moduleName + 'Username')
+    api_key = settings.value(self.moduleName + '/' + self.moduleName + 'ApiKey')
+    api_url = settings.value(self.moduleName + '/' + self.moduleName + 'ApiUrl')
+
+    self.userEdit.setText(username)
+    self.apiKeyEdit.setText(api_key)
+    self.apiUrl.setText(api_url)
+
 
   def cleanup(self):
     pass
 
-  def onSelect(self):
-    self.applyButton.enabled = self.inputSelector.currentNode() and self.outputSelector.currentNode()
-
-  def onApplyButton(self):
-    logic = GirderStorageTestLogic()
-    enableScreenshotsFlag = self.enableScreenshotsFlagCheckBox.checked
-    imageThreshold = self.imageThresholdSliderWidget.value
-    logic.run(self.inputSelector.currentNode(), self.outputSelector.currentNode(), imageThreshold, enableScreenshotsFlag)
-
-
   def onSaveButton(self):
     logic =GirderStorageTestLogic()
+    username = self.userEdit.text
+    api_key = self.apiKeyEdit.text
+    api_url = self.apiUrl.text
+
+    settings = slicer.app.userSettings()
+    settings.beginGroup(self.moduleName)
+    settings.setValue(self.moduleName + 'Username', username)
+    settings.setValue(self.moduleName + 'ApiKey', api_key)
+    settings.setValue(self.moduleName + 'ApiUrl', api_url)
+    settings.endGroup()
+
     logic.saveAndUploadScene(username, api_key, api_url)
 
 #
